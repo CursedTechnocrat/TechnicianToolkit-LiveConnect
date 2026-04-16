@@ -4,11 +4,24 @@
 
 ---
 
-## Why a Separate Suite?
+## Which Toolkit Should I Use?
 
-The main Technician Toolkit (GRIMOIRE) relies on interactive menus, `Read-Host` prompts, `ReadKey` pauses, and `Clear-Host` calls. LiveConnect's PowerShell shell cannot handle any of those — the session hangs or errors out immediately.
+> **Working at the machine or in a full RDP session?** Use the main toolkit instead:
+> ### [TechnicianToolkit →](https://github.com/CursedTechnocrat/TechnicianToolkit)
 
-Every script in this folder is purpose-built to run entirely from parameters. All output is plain status lines. Report and log file paths are printed clearly at the end so you can retrieve them.
+| Situation | Use |
+|-----------|-----|
+| Running through Kaseya VSA LiveConnect | **This repo** — TechnicianToolkit-LiveConnect |
+| Sitting at the machine or in a full RDP session | **[TechnicianToolkit](https://github.com/CursedTechnocrat/TechnicianToolkit)** |
+| Need fire-and-forget with parameter-only input | **This repo** — all inputs are parameters, no prompts |
+| Need a guided, menu-driven workflow with confirmations | **[TechnicianToolkit](https://github.com/CursedTechnocrat/TechnicianToolkit)** |
+| Need COVENANT, PHANTOM, CIPHER, ARCHIVE, SPECTER, or RUNEPRESS | **[TechnicianToolkit](https://github.com/CursedTechnocrat/TechnicianToolkit)** — these tools are interactive by nature and have no LiveConnect counterpart |
+
+### Why are these separate?
+
+The main Technician Toolkit is built around interactive menus, `Read-Host` prompts, `ReadKey` pauses, and `Clear-Host` calls — features that make it guided and approachable when a technician is present. LiveConnect's PowerShell shell cannot handle any of those. The session hangs or errors out immediately when any interactive call is encountered.
+
+Every script in this repo is written from scratch to run entirely from parameters. All output is plain status lines. Report and log file paths are printed clearly at the end of each run so you can retrieve them through LiveConnect's file transfer or a mapped share.
 
 ---
 
@@ -233,12 +246,14 @@ All LiveConnect scripts follow the same pattern:
 
 ## Relationship to the Main Toolkit
 
+**Main Toolkit:** https://github.com/CursedTechnocrat/TechnicianToolkit
+
 These scripts are LiveConnect-only counterparts to tools in the main Technician Toolkit. They are not launched from GRIMOIRE and do not share code with the main scripts. Each one was written from scratch to guarantee no interactive calls are present.
 
-| LiveConnect Script | Main Toolkit Equivalent |
-|--------------------|------------------------|
-| `nexus.ps1` | `conjure.ps1` |
-| `probe.ps1` | `oracle.ps1` |
-| `audit.ps1` | `ward.ps1` |
-| `bastion.ps1` | `sigil.ps1` |
-| `renew.ps1` | `restoration.ps1` |
+| LiveConnect Script | Main Toolkit Equivalent | What's different |
+|--------------------|------------------------|-----------------|
+| `nexus.ps1` | `conjure.ps1` | No package manager prompt, no optional software, no status menu — required packages only |
+| `probe.ps1` | `oracle.ps1` | No banner, no "open report?" prompt — report path passed as parameter |
+| `audit.ps1` | `ward.ps1` | No banner, no "press Enter" pause — report path passed as parameter |
+| `bastion.ps1` | `sigil.ps1` | No category selection menu, no RDP prompt — categories and RDP passed as parameters |
+| `renew.ps1` | `restoration.ps1` | No countdown timer, no reboot prompt — `-AutoReboot` switch controls reboot behavior |
