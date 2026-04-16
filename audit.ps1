@@ -195,6 +195,10 @@ if ($flagged.Count -gt 0) {
 Write-Host ""
 Write-Host "[*] Generating HTML report..." -ForegroundColor Magenta
 
+function HtmlEncode([string]$s) {
+    $s -replace '&','&amp;' -replace '<','&lt;' -replace '>','&gt;' -replace '"','&quot;'
+}
+
 $totalAccounts = $accounts.Count
 $enabledCount  = ($accounts | Where-Object {  $_.Enabled  } | Measure-Object).Count
 $disabledCount = ($accounts | Where-Object { -not $_.Enabled } | Measure-Object).Count
@@ -215,18 +219,18 @@ foreach ($acct in ($accounts | Sort-Object IsAdmin -Descending)) {
         "<span class='badge badge-neutral'>Standard</span>"
     }
     $flagCell = if ($acct.Flags) {
-        "<span class='flag'>$([System.Web.HttpUtility]::HtmlEncode($acct.Flags))</span>"
+        "<span class='flag'>$(HtmlEncode($acct.Flags))</span>"
     } else { "" }
 
     $rows += @"
         <tr>
-            <td><strong>$([System.Web.HttpUtility]::HtmlEncode($acct.Name))</strong></td>
-            <td>$([System.Web.HttpUtility]::HtmlEncode($acct.FullName))</td>
+            <td><strong>$(HtmlEncode($acct.Name))</strong></td>
+            <td>$(HtmlEncode($acct.FullName))</td>
             <td>$enabledBadge</td>
             <td>$adminBadge</td>
-            <td>$([System.Web.HttpUtility]::HtmlEncode($acct.LastLogon))</td>
-            <td>$([System.Web.HttpUtility]::HtmlEncode($acct.PasswordLastSet))</td>
-            <td>$([System.Web.HttpUtility]::HtmlEncode($acct.PasswordExpires))</td>
+            <td>$(HtmlEncode($acct.LastLogon))</td>
+            <td>$(HtmlEncode($acct.PasswordLastSet))</td>
+            <td>$(HtmlEncode($acct.PasswordExpires))</td>
             <td>$flagCell</td>
         </tr>
 "@
@@ -303,7 +307,6 @@ $html = @"
 "@
 
 try {
-    Add-Type -AssemblyName System.Web -ErrorAction SilentlyContinue
     [System.IO.File]::WriteAllText($reportFullPath, $html, [System.Text.Encoding]::UTF8)
     Write-Host "[OK] Report saved: $reportFullPath" -ForegroundColor Green
 }

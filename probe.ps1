@@ -407,6 +407,10 @@ Write-Host ""
 
 Write-Host "Generating HTML report..." -ForegroundColor Magenta
 
+function HtmlEncode([string]$s) {
+    $s -replace '&','&amp;' -replace '<','&lt;' -replace '>','&gt;' -replace '"','&quot;'
+}
+
 function ConvertTo-HtmlTable {
     param([array]$Objects, [string]$EmptyMessage = "No data available.")
     if (-not $Objects -or $Objects.Count -eq 0) {
@@ -420,7 +424,7 @@ function ConvertTo-HtmlTable {
         $html += "<tr>"
         foreach ($h in $headers) {
             $val  = $row.$h
-            $html += "<td>$([System.Web.HttpUtility]::HtmlEncode($val))</td>"
+            $html += "<td>$(HtmlEncode($val))</td>"
         }
         $html += "</tr>"
     }
@@ -616,7 +620,6 @@ $htmlReport = @"
 "@
 
 try {
-    Add-Type -AssemblyName System.Web -ErrorAction SilentlyContinue
     $htmlReport | Out-File -FilePath $reportFullPath -Encoding UTF8 -Force
     Write-Host "[OK] Report saved: $reportFullPath" -ForegroundColor Green
 }
