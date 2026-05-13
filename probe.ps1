@@ -418,7 +418,7 @@ function ConvertTo-HtmlTable {
     }
     $headers = $Objects[0].PSObject.Properties.Name
     $html    = "<table><thead><tr>"
-    $html   += ($headers | ForEach-Object { "<th>$_</th>" }) -join ""
+    $html   += ($headers | ForEach-Object { "<th>$(HtmlEncode($_))</th>" }) -join ""
     $html   += "</tr></thead><tbody>"
     foreach ($row in $Objects) {
         $html += "<tr>"
@@ -432,14 +432,18 @@ function ConvertTo-HtmlTable {
     return $html
 }
 
-# Disk rows
+# Disk rows  (HtmlEncode every value pulled from the system — volume labels,
+# adapter names, etc. can contain `<` / `>` / `&` and would otherwise corrupt
+# the report or smuggle script tags into a saved/served HTML.)
 $diskRows = ""
 foreach ($d in $reportData['Hardware'].Disks) {
     $barColor = if ($d.PctUsed -ge 90) { "#e74c3c" } elseif ($d.PctUsed -ge 75) { "#f39c12" } else { "#2ecc71" }
+    $drive = HtmlEncode($d.Drive)
+    $label = HtmlEncode($d.Label)
     $diskRows += @"
         <tr>
-            <td>$($d.Drive)</td>
-            <td>$($d.Label)</td>
+            <td>$drive</td>
+            <td>$label</td>
             <td>$($d.TotalGB) GB</td>
             <td>$($d.UsedGB) GB</td>
             <td>$($d.FreeGB) GB</td>
@@ -456,7 +460,12 @@ foreach ($d in $reportData['Hardware'].Disks) {
 # Network rows
 $netRows = ""
 foreach ($n in $reportData['Network']) {
-    $netRows += "<tr><td>$($n.Adapter)</td><td>$($n.IP)</td><td>$($n.MAC)</td><td>$($n.Gateway)</td><td>$($n.DNS)</td></tr>"
+    $adapter = HtmlEncode($n.Adapter)
+    $ip      = HtmlEncode($n.IP)
+    $mac     = HtmlEncode($n.MAC)
+    $gw      = HtmlEncode($n.Gateway)
+    $dns     = HtmlEncode($n.DNS)
+    $netRows += "<tr><td>$adapter</td><td>$ip</td><td>$mac</td><td>$gw</td><td>$dns</td></tr>"
 }
 
 $hw     = $reportData['Hardware']

@@ -116,7 +116,24 @@ function Test-ChocolateyAvailable {
     try {
         Set-ExecutionPolicy Bypass -Scope Process -Force
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-        Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+        # Download the installer to disk and AST-validate it before executing.
+        # Piping a remote URL into Invoke-Expression hands any CDN/DNS
+        # compromise a one-shot RCE on every endpoint we run on.
+        $installer = Join-Path $env:TEMP ("nexus_choco_install_{0}.ps1" -f ([guid]::NewGuid().ToString('N')))
+        try {
+            Invoke-WebRequest -Uri 'https://community.chocolatey.org/install.ps1' -OutFile $installer -UseBasicParsing -ErrorAction Stop
+            $parseErrors = $null
+            $null = [System.Management.Automation.Language.Parser]::ParseFile($installer, [ref]$null, [ref]$parseErrors)
+            if ($parseErrors -and $parseErrors.Count -gt 0) {
+                Write-Host "[ERROR] Chocolatey installer failed syntax validation; refusing to execute." -ForegroundColor Red
+                return $false
+            }
+            & $installer
+        }
+        finally {
+            Remove-Item -Path $installer -Force -ErrorAction SilentlyContinue
+        }
 
         $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
                     [System.Environment]::GetEnvironmentVariable("Path", "User")
@@ -147,16 +164,28 @@ function Test-WingetAvailable {
     Write-Host "[!!] Winget not found — attempting install..." -ForegroundColor Yellow
 
     try {
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+
         $wingetUrl = "https://aka.ms/getwinget"
-        $tempFile  = Join-Path $env:TEMP "GetWinget.ps1"
+        $tempFile  = Join-Path $env:TEMP ("nexus_winget_install_{0}.ps1" -f ([guid]::NewGuid().ToString('N')))
 
-        (New-Object System.Net.WebClient).DownloadFile($wingetUrl, $tempFile)
+        try {
+            Invoke-WebRequest -Uri $wingetUrl -OutFile $tempFile -UseBasicParsing -ErrorAction Stop
 
-        if (Test-Path $tempFile) {
-            & $tempFile
+            if (Test-Path $tempFile) {
+                $parseErrors = $null
+                $null = [System.Management.Automation.Language.Parser]::ParseFile($tempFile, [ref]$null, [ref]$parseErrors)
+                if ($parseErrors -and $parseErrors.Count -gt 0) {
+                    Write-Host "[ERROR] Winget installer failed syntax validation; refusing to execute." -ForegroundColor Red
+                    return $false
+                }
+                & $tempFile
+                Write-Host "[OK] Winget installed successfully" -ForegroundColor Green
+                return $true
+            }
+        }
+        finally {
             Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
-            Write-Host "[OK] Winget installed successfully" -ForegroundColor Green
-            return $true
         }
     }
     catch {

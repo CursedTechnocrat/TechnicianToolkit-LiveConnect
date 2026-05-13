@@ -33,6 +33,12 @@
 
 param(
     [string]$ReportPath = "C:\Temp",
+    # Port scanning is opt-in. Sweeping a customer LAN for open ports from an
+    # endpoint can trip EDR/IDS and looks like reconnaissance — only do it
+    # when the operator explicitly asks for it.
+    [switch]$IncludePortScan,
+    # Backwards-compat: -SkipPortScan still works but is now a no-op since the
+    # default already skips the scan.
     [switch]$SkipPortScan
 )
 
@@ -65,7 +71,7 @@ Write-Host ("  " + ("─" * 62)) -ForegroundColor Cyan
 Write-Host "  Machine    : $env:COMPUTERNAME" -ForegroundColor Gray
 Write-Host "  Run As     : $env:USERDOMAIN\$env:USERNAME" -ForegroundColor Gray
 Write-Host "  Time       : $ExecutionTime" -ForegroundColor Gray
-Write-Host "  PortScan   : $(if ($SkipPortScan) { 'skipped' } else { 'enabled' })" -ForegroundColor Gray
+Write-Host "  PortScan   : $(if ($IncludePortScan) { 'enabled' } else { 'skipped (opt-in via -IncludePortScan)' })" -ForegroundColor Gray
 Write-Host "  Report     : $reportFullPath" -ForegroundColor Gray
 Write-Host ("  " + ("─" * 62)) -ForegroundColor Cyan
 Write-Host ""
@@ -203,7 +209,7 @@ Write-Host ""
 # PORT SCAN
 # ===========================
 
-if (-not $SkipPortScan) {
+if ($IncludePortScan -and -not $SkipPortScan) {
     $totalOps = $discovered.Count * $ScanPorts.Count
     Write-Host "[*] TCP-port scanning $($discovered.Count) host(s) across $($ScanPorts.Count) ports ($totalOps checks)..." -ForegroundColor Magenta
     Write-Host "    Ports: $($ScanPorts -join ', ')" -ForegroundColor Gray
@@ -337,7 +343,7 @@ $html = @"
 <h1>T.O.R.C.H. -- Network Discovery</h1>
 <div class="subtitle">Subnet: <strong>$prefix.0/24</strong> &nbsp;|&nbsp; Host: <strong>$env:COMPUTERNAME</strong> &nbsp;|&nbsp; Generated: $ExecutionTime</div>
 
-<div class="note">Port scan covers: 21 (FTP), 22 (SSH), 23 (Telnet), 80 (HTTP), 443 (HTTPS), 445 (SMB), 3389 (RDP), 5985 (WinRM), 8080, 8443. $(if ($SkipPortScan) { '<strong>This run did not include the TCP port scan.</strong>' })</div>
+<div class="note">Port scan covers: 21 (FTP), 22 (SSH), 23 (Telnet), 80 (HTTP), 443 (HTTPS), 445 (SMB), 3389 (RDP), 5985 (WinRM), 8080, 8443. $(if (-not $IncludePortScan -or $SkipPortScan) { '<strong>This run did not include the TCP port scan (re-run with -IncludePortScan to enable).</strong>' })</div>
 
 <div class="summary">
   <div class="card"><div class="val">$($discovered.Count)</div><div class="lbl">Total Hosts</div></div>

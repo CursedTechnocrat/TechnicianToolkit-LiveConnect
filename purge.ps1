@@ -99,23 +99,58 @@ function Get-FolderSize {
     return $total
 }
 
+function Test-PathInSafeRoot {
+    # Defense in depth: never recurse-delete a path that doesn't resolve under
+    # a known cleanup root, even if the env vars are empty or get tampered with.
+    param([string]$Path)
+    if ([string]::IsNullOrWhiteSpace($Path)) { return $false }
+    try { $full = (Resolve-Path -LiteralPath $Path -ErrorAction Stop).Path } catch { return $false }
+    if ($full.Length -lt 4) { return $false }
+
+    $safeRoots = @()
+    if ($env:LOCALAPPDATA) { $safeRoots += (Join-Path $env:LOCALAPPDATA 'Temp') }
+    if ($env:TEMP)         { $safeRoots += $env:TEMP }
+    $safeRoots += (Join-Path $env:SystemRoot 'Temp')
+    $safeRoots += (Join-Path $env:SystemRoot 'SoftwareDistribution\Download')
+    $safeRoots += (Join-Path $env:SystemDrive 'Users')   # for browser cache paths
+
+    foreach ($root in $safeRoots) {
+        if ([string]::IsNullOrWhiteSpace($root)) { continue }
+        if ($full.StartsWith($root, [System.StringComparison]::OrdinalIgnoreCase)) { return $true }
+    }
+    return $false
+}
+
 function Remove-FolderContents {
     param([string[]]$Paths)
     $freed = 0L
+    $failures = 0
     foreach ($p in $Paths) {
         if (-not (Test-Path $p)) { continue }
+        if (-not (Test-PathInSafeRoot -Path $p)) {
+            Write-Host ("    [!!] Refusing to clean unsafe path: {0}" -f $p) -ForegroundColor Red
+            continue
+        }
         $items = Get-ChildItem -Path $p -Force -ErrorAction SilentlyContinue
         foreach ($item in $items) {
+            $size = 0L
             try {
                 $size = if ($item.PSIsContainer) {
                     (Get-ChildItem -Path $item.FullName -Recurse -Force -ErrorAction SilentlyContinue |
                         Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum
                 } else { $item.Length }
                 if ($null -eq $size) { $size = 0 }
-                Remove-Item -Path $item.FullName -Recurse -Force -ErrorAction SilentlyContinue
+                # -ErrorAction Stop so the catch sees in-use/access-denied;
+                # we surface a count, not silently swallow.
+                Remove-Item -Path $item.FullName -Recurse -Force -ErrorAction Stop
                 $freed += $size
-            } catch {}
+            } catch {
+                $failures++
+            }
         }
+    }
+    if ($failures -gt 0) {
+        Write-Host ("    [!!] {0} item(s) could not be removed (locked / in-use / access denied)." -f $failures) -ForegroundColor Yellow
     }
     return $freed
 }
@@ -132,7 +167,7 @@ function Get-UserTempPaths {
 
 function Get-BrowserCachePaths {
     $paths = @()
-    $profiles = Get-ChildItem 'C:\Users' -Directory -ErrorAction SilentlyContinue
+    $profiles = Get-ChildItem (Join-Path $env:SystemDrive 'Users') -Directory -ErrorAction SilentlyContinue
     foreach ($profile in $profiles) {
         $base = $profile.FullName
         $chromeBase = Join-Path $base 'AppData\Local\Google\Chrome\User Data'
@@ -163,8 +198,8 @@ function Get-BrowserCachePaths {
 Write-Host "[*] Scanning cleanup targets..." -ForegroundColor Magenta
 
 $userTempPaths    = Get-UserTempPaths
-$sysTempPaths     = @('C:\Windows\Temp')
-$wuCachePaths     = @('C:\Windows\SoftwareDistribution\Download')
+$sysTempPaths     = @((Join-Path $env:SystemRoot 'Temp'))
+$wuCachePaths     = @((Join-Path $env:SystemRoot 'SoftwareDistribution\Download'))
 $browserCachePaths = Get-BrowserCachePaths
 
 $userTempSize     = Get-FolderSize -Paths $userTempPaths
@@ -255,9 +290,27 @@ Invoke-CleanCategory -Id '2' -Label 'System Temp' -EstimatedSize $sysTempSize -A
 Invoke-CleanCategory -Id '3' -Label 'Windows Update Cache' -EstimatedSize $wuCacheSize -Action {
     $wuSvc = Get-Service -Name wuauserv -ErrorAction SilentlyContinue
     $wasRunning = $wuSvc -and $wuSvc.Status -eq 'Running'
-    if ($wasRunning) { Stop-Service -Name wuauserv -Force -ErrorAction SilentlyContinue }
-    $f = Remove-FolderContents -Paths $wuCachePaths
-    if ($wasRunning) { Start-Service -Name wuauserv -ErrorAction SilentlyContinue }
+    $stoppedByUs = $false
+    if ($wasRunning) {
+        try {
+            Stop-Service -Name wuauserv -Force -ErrorAction Stop
+            $stoppedByUs = $true
+        } catch {
+            # If we can't stop wuauserv we'd be deleting in-use files; bail out
+            # rather than silently corrupting the WU client state.
+            Write-Host ("    [!!] Could not stop wuauserv: {0}. Skipping WU cache cleanup." -f $_.Exception.Message) -ForegroundColor Red
+            return 0L
+        }
+    }
+    try {
+        $f = Remove-FolderContents -Paths $wuCachePaths
+    }
+    finally {
+        if ($stoppedByUs) {
+            try { Start-Service -Name wuauserv -ErrorAction Stop }
+            catch { Write-Host ("    [!!] wuauserv failed to restart: {0}" -f $_.Exception.Message) -ForegroundColor Red }
+        }
+    }
     $f
 }
 

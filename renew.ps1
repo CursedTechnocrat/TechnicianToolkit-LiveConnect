@@ -39,7 +39,9 @@
 #>
 
 param(
-    [switch]$AutoReboot
+    [switch]$AutoReboot,
+    [switch]$ScanOnly,
+    [switch]$AllowModuleInstall
 )
 
 # ===========================
@@ -109,14 +111,33 @@ try {
     }
     Write-Host "    Monitor timeout saved (AC: $($script:originalMonitorAC)m, DC: $($script:originalMonitorDC)m)" -ForegroundColor Gray
 
-    powercfg /change standby-timeout-ac 0
-    powercfg /change standby-timeout-dc 0
-    powercfg /change monitor-timeout-ac 0
-    powercfg /change monitor-timeout-dc 0
-    Write-Host "[OK] Power settings configured (sleep disabled for update run)." -ForegroundColor Green
+    if ($ScanOnly) {
+        Write-Host "[~] ScanOnly mode — leaving power settings untouched." -ForegroundColor Yellow
+        $script:powerChanged = $false
+    } else {
+        powercfg /change standby-timeout-ac 0
+        powercfg /change standby-timeout-dc 0
+        powercfg /change monitor-timeout-ac 0
+        powercfg /change monitor-timeout-dc 0
+        $script:powerChanged = $true
+        Write-Host "[OK] Power settings configured (sleep disabled for update run)." -ForegroundColor Green
+    }
 }
 catch {
     Write-Host "[!!] Error configuring power settings: $($_.Exception.Message)" -ForegroundColor Yellow
+}
+
+# If something throws between here and the explicit restore at the bottom of
+# the script, the engine-exiting event will still restore the timeouts.
+$null = Register-EngineEvent -SourceIdentifier PowerShell.Exiting -Action {
+    if ($script:powerChanged) {
+        try {
+            powercfg /change monitor-timeout-ac $script:originalMonitorAC | Out-Null
+            powercfg /change monitor-timeout-dc $script:originalMonitorDC | Out-Null
+            powercfg /change standby-timeout-ac $script:originalMonitorAC | Out-Null
+            powercfg /change standby-timeout-dc $script:originalMonitorDC | Out-Null
+        } catch {}
+    }
 }
 
 Write-Host ""
@@ -128,26 +149,31 @@ Write-Host ""
 Write-Host "[2/4] Ensuring PSWindowsUpdate module is available..." -ForegroundColor Magenta
 
 try {
-    $nuget = Get-PackageProvider -Name NuGet -ErrorAction SilentlyContinue
-    if ($null -eq $nuget -or $nuget.Version -lt [Version]"2.8.5.201") {
-        Write-Host "    Installing NuGet package provider..." -ForegroundColor Gray
-        Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false | Out-Null
-        Write-Host "    [OK] NuGet provider installed." -ForegroundColor Green
-    }
-    else {
-        Write-Host "    [OK] NuGet provider available." -ForegroundColor Green
-    }
-
     $module = Get-Module -Name PSWindowsUpdate -ListAvailable
+
     if ($null -eq $module) {
+        if (-not $AllowModuleInstall) {
+            # Refuse to silently install an unpinned PSGallery module on every
+            # endpoint via RMM. Operator must opt in with -AllowModuleInstall.
+            Write-Host "[ERROR] PSWindowsUpdate module not installed." -ForegroundColor Red
+            Write-Host "        Install it manually:  Install-Module PSWindowsUpdate -Force" -ForegroundColor Yellow
+            Write-Host "        Or re-run with -AllowModuleInstall to install from PSGallery." -ForegroundColor Yellow
+            if ($transcriptPath) { try { Stop-Transcript } catch {} }
+            exit 1
+        }
+
+        $nuget = Get-PackageProvider -Name NuGet -ErrorAction SilentlyContinue
+        if ($null -eq $nuget -or $nuget.Version -lt [Version]"2.8.5.201") {
+            Write-Host "    Installing NuGet package provider..." -ForegroundColor Gray
+            Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false | Out-Null
+            Write-Host "    [OK] NuGet provider installed." -ForegroundColor Green
+        }
         Write-Host "    Installing PSWindowsUpdate module (this may take a moment)..." -ForegroundColor Gray
         Install-Module -Name PSWindowsUpdate -Force -Confirm:$false
         Write-Host "[OK] PSWindowsUpdate installed." -ForegroundColor Green
     }
     else {
-        Write-Host "    Checking for module updates..." -ForegroundColor Gray
-        Update-Module -Name PSWindowsUpdate -Force -Confirm:$false -ErrorAction SilentlyContinue
-        Write-Host "[OK] PSWindowsUpdate is up to date." -ForegroundColor Green
+        Write-Host "[OK] PSWindowsUpdate is available." -ForegroundColor Green
     }
 }
 catch {
@@ -190,13 +216,16 @@ try {
         Write-Host "[OK] No updates available. System is up to date." -ForegroundColor Green
     }
     else {
-        Write-Host "    Found $($updates.Count) update(s) to install:" -ForegroundColor Gray
+        Write-Host "    Found $($updates.Count) update(s):" -ForegroundColor Gray
         $updates | ForEach-Object { Write-Host "    * $($_.Title)" -ForegroundColor Gray }
         Write-Host ""
 
-        Install-WindowsUpdate -NotCategory "Drivers" -AutoReboot:$false -Confirm:$false
-
-        Write-Host "[OK] Windows Updates installed." -ForegroundColor Green
+        if ($ScanOnly) {
+            Write-Host "[~] ScanOnly mode — listed $($updates.Count) pending update(s) but installed none." -ForegroundColor Yellow
+        } else {
+            Install-WindowsUpdate -NotCategory "Drivers" -AutoReboot:$false -Confirm:$false
+            Write-Host "[OK] Windows Updates installed." -ForegroundColor Green
+        }
     }
 }
 catch {

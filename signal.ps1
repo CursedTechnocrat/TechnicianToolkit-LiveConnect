@@ -200,7 +200,18 @@ function ConvertFrom-WlanProfileXml([string]$XmlPath) {
     }
 }
 
+function Remove-StaleSignalTempFolders {
+    # If a previous run was killed (LiveConnect disconnect / Ctrl+C) between
+    # the `key=clear` XML export and the cleanup, cleartext PSKs could be
+    # left in %TEMP%\TK-SIGNAL-<guid>. Wipe stale folders before we start.
+    $tempRoot = [System.IO.Path]::GetTempPath()
+    Get-ChildItem -Path $tempRoot -Directory -Filter 'TK-SIGNAL-*' -ErrorAction SilentlyContinue |
+        ForEach-Object { Remove-Item -Path $_.FullName -Recurse -Force -ErrorAction SilentlyContinue }
+}
+
 function Get-WlanProfiles {
+    Remove-StaleSignalTempFolders
+
     $names = Get-WlanProfileList
     if ($names.Count -eq 0) { return @() }
     $rootTemp = Join-Path ([System.IO.Path]::GetTempPath()) ("TK-SIGNAL-" + [guid]::NewGuid().ToString('N'))
