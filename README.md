@@ -27,6 +27,8 @@ Every script in this repo is written from scratch to run entirely from parameter
 
 ## Scripts
 
+### Deployment, baseline & diagnostics
+
 | Script | Acronym | Purpose | Counterpart |
 |--------|---------|---------|-------------|
 | **nexus.ps1** | **N.E.X.U.S.** — Network-Executed Xpress Unattended Setup | Required software deployment via winget or Chocolatey | C.O.N.J.U.R.E. |
@@ -34,6 +36,25 @@ Every script in this repo is written from scratch to run entirely from parameter
 | **audit.ps1** | **A.U.D.I.T.** — Automated User Detection, Inspection & Triage | Local user account audit and HTML report | W.A.R.D. |
 | **bastion.ps1** | **B.A.S.T.I.O.N.** — Baseline Automation: Secures, Tunes, Isolates & Obliterates Negligence | Security baseline enforcement | S.I.G.I.L. |
 | **renew.ps1** | **R.E.N.E.W.** — Remotely Enacted Non-interactive Engine for Windows-updates | Windows Update installation | R.E.S.T.O.R.A.T.I.O.N. |
+
+### Security & health audits
+
+| Script | Acronym | Purpose | Counterpart |
+|--------|---------|---------|-------------|
+| **snare.ps1** | **S.N.A.R.E.** — Surveys Native Autoruns & Records Entries | Persistence/autoruns audit (Run keys, startup folders, services, scheduled tasks, WMI subscriptions, IFEO, Winlogon) with signature & target-existence enrichment | T.A.L.O.N. |
+| **seal.ps1** | **S.E.A.L.** — Secure Element Audit Log | TPM presence/spec/owner audit, BitLocker dependency cross-reference, EK readiness, Windows 11 / Autopilot readiness verdict | T.O.T.E.M. |
+| **aegis.ps1** | **A.E.G.I.S.** — Antivirus Endpoint Guard Inspection Snapshot | Microsoft Defender posture: real-time, tamper, signatures, threats, ASR, exclusions, third-party AV, service health, recent events | P.A.L.A.D.I.N. |
+| **pulse.ps1** | **P.U.L.S.E.** — Physical-disk Usage, Lifespan & SMART Evaluation | Physical-disk health, SMART failure prediction, serial/firmware, volume capacity | A.U.G.U.R. |
+| **mortar.ps1** | **M.O.R.T.A.R.** — Motherboard, Onboard ROM & TPM/UEFI Audit Report | BIOS/UEFI state, Secure Boot, vendor firmware-update channels, optional WU driver/firmware scan | A.N.V.I.L. |
+| **spark.ps1** | **S.P.A.R.K.** — System Power Audit Reporting Kit | Battery health (design vs full charge, cycle count), capacity history, runtime estimates, AC/DC usage — runs powercfg /batteryreport | P.Y.R.E. |
+
+### Cleanup & maintenance
+
+| Script | Acronym | Purpose | Counterpart |
+|--------|---------|---------|-------------|
+| **verge.ps1** | **V.E.R.G.E.** — Volume Examination & Resource Gauge Evaluator | Read-only disk health + volume space audit + stale user-profile detection | T.H.R.E.S.H.O.L.D. (audit subset) |
+| **purge.ps1** | **P.U.R.G.E.** — PowerShell Unified Reclamation & Garbage Elimination | Disk cleanup (user/system temp, WU cache, recycle bin, browser caches) with categories + WhatIf | C.L.E.A.N.S.E. |
+| **sentry.ps1** | **S.E.N.T.R.Y.** — Services, Events 'N Tasks Reporting Yield | Critical services, scheduled-task health, recent System/Application errors | G.A.R.G.O.Y.L.E. (audit-only) |
 
 ---
 
@@ -56,6 +77,33 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\probe.ps1"; irm 
 
 # R.E.N.E.W. — Windows Update installation
 Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\renew.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/renew.ps1 -OutFile $f; & $f
+
+# S.N.A.R.E. — Persistence / autoruns audit
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\snare.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/snare.ps1 -OutFile $f; & $f
+
+# S.E.A.L. — TPM health & BitLocker dependency
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\seal.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/seal.ps1 -OutFile $f; & $f
+
+# A.E.G.I.S. — AV / Defender posture
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\aegis.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/aegis.ps1 -OutFile $f; & $f
+
+# P.U.L.S.E. — Disk health & SMART
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\pulse.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/pulse.ps1 -OutFile $f; & $f
+
+# M.O.R.T.A.R. — BIOS / UEFI / firmware audit
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\mortar.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/mortar.ps1 -OutFile $f; & $f
+
+# S.P.A.R.K. — Battery health (laptops only)
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\spark.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/spark.ps1 -OutFile $f; & $f
+
+# V.E.R.G.E. — Disk space + stale profile audit
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\verge.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/verge.ps1 -OutFile $f; & $f
+
+# P.U.R.G.E. — Disk cleanup
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\purge.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/purge.ps1 -OutFile $f; & $f
+
+# S.E.N.T.R.Y. — Service / task / event audit
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\sentry.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/sentry.ps1 -OutFile $f; & $f
 ```
 
 > All scripts require an Administrator PowerShell session. The `-Scope Process` flag limits the execution policy bypass to the current session only — it does not permanently change system policy.
@@ -231,6 +279,187 @@ Detects and installs available Windows Updates (drivers excluded). Disables slee
 
 ---
 
+### S.N.A.R.E. — Persistence / Autoruns Audit
+
+Sweeps Run/RunOnce keys (HKCU + HKLM, including Wow6432), Startup folders, auto-start Services, non-Microsoft Scheduled Tasks, WMI event subscriptions, Image File Execution Options debugger hooks, and Winlogon (Shell, Userinit, AppInit_DLLs). Each entry is enriched with Authenticode signature status and target-on-disk existence.
+
+```powershell
+.\snare.ps1
+.\snare.ps1 -ReportPath "C:\Temp"
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `-ReportPath` | `string` | `C:\Temp` | Folder where the HTML report is saved |
+
+**Output:** `SNARE_<yyyyMMdd_HHmmss>.html`. Read-only — no state-changing actions.
+
+---
+
+### S.E.A.L. — TPM Health Audit
+
+Reads the TPM via `Get-Tpm` (presence, spec, manufacturer, ownership, ready state), cross-references against BitLocker volumes to identify which protectors actually depend on the TPM, and verifies the Endorsement Key is readable. Produces a red / yellow / green readiness verdict suitable for Windows 11 / BitLocker / Autopilot gating.
+
+```powershell
+.\seal.ps1
+.\seal.ps1 -ReportPath "C:\Temp"
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `-ReportPath` | `string` | `C:\Temp` | Folder where the HTML report is saved |
+
+**Output:** `SEAL_<yyyyMMdd_HHmmss>.html`. Read-only.
+
+---
+
+### A.E.G.I.S. — AV / Defender Posture
+
+Reads Microsoft Defender state (`Get-MpComputerStatus` / `Get-MpPreference`), threat history, recent detections, registered third-party AV products (SecurityCenter2), Defender service health, and Defender Operational events from the last N days.
+
+```powershell
+.\aegis.ps1
+.\aegis.ps1 -ReportPath "C:\Temp"
+.\aegis.ps1 -EventDays 14 -SignatureMaxAgeDays 3
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `-ReportPath` | `string` | `C:\Temp` | Folder where the HTML report is saved |
+| `-EventDays` | `int` | `7` | Look-back window for Defender Operational events (1-90) |
+| `-SignatureMaxAgeDays` | `int` | `7` | Yellow threshold for AV signature age (red = 2x) |
+
+**Output:** `AEGIS_<yyyyMMdd_HHmmss>.html`. Read-only.
+
+---
+
+### P.U.L.S.E. — Disk Health & SMART
+
+Inspects every physical disk: health status, SMART failure prediction (via `MSStorageDriver_FailurePredictStatus`), serial, firmware, bus/media type. Cross-checks volume health and capacity.
+
+```powershell
+.\pulse.ps1
+.\pulse.ps1 -ReportPath "C:\Temp"
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `-ReportPath` | `string` | `C:\Temp` | Folder where the HTML report is saved |
+
+**Output:** `PULSE_<yyyyMMdd_HHmmss>.html`. Read-only.
+
+---
+
+### M.O.R.T.A.R. — BIOS / UEFI / Firmware Audit
+
+System identity (manufacturer, model, serial, UUID), BIOS version & release date, UEFI / Legacy boot mode, Secure Boot state, and vendor-channel firmware-update tooling presence (Dell Command Update, HP HPIA / HPSA, Lenovo Vantage / System Update, Surface UEFI Configurator).
+
+```powershell
+.\mortar.ps1
+.\mortar.ps1 -ReportPath "C:\Temp"
+.\mortar.ps1 -ScanWindowsUpdate    # add WU driver/firmware scan (requires PSWindowsUpdate already installed)
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `-ReportPath` | `string` | `C:\Temp` | Folder where the HTML report is saved |
+| `-ScanWindowsUpdate` | `switch` | off | Scan Windows Update for pending driver/firmware updates. Never auto-installs PSWindowsUpdate. |
+
+**Output:** `MORTAR_<yyyyMMdd_HHmmss>.html`. Read-only.
+
+---
+
+### S.P.A.R.K. — Battery Health (Laptops)
+
+Reads ROOT\WMI battery classes for design vs full-charge capacity, cycle count, voltage and chemistry. Runs `powercfg /batteryreport` to enrich with serial, manufacture date, capacity history, runtime estimates at full charge vs design, and AC/DC usage totals. The original Microsoft-formatted HTML and the parsed XML are saved alongside the SPARK report. Skips powercfg cleanly when no battery is present (desktops/servers/VMs).
+
+```powershell
+.\spark.ps1
+.\spark.ps1 -ReportPath "C:\Temp"
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `-ReportPath` | `string` | `C:\Temp` | Folder where the HTML report (and powercfg files) are saved |
+
+**Output:**
+- `SPARK_<yyyyMMdd_HHmmss>.html` — main report
+- `SPARK_powercfg_<yyyyMMdd_HHmmss>.xml` — parsed powercfg data
+- `SPARK_powercfg_<yyyyMMdd_HHmmss>.html` — Microsoft-formatted battery report (when available)
+
+Thresholds: capacity ≥ 80% healthy, 60-80% plan replacement, < 60% replace now. Cycles < 300 healthy, 300-500 plan replacement, ≥ 500 replace now.
+
+---
+
+### V.E.R.G.E. — Disk Space & Stale Profile Audit
+
+Read-only sibling to P.U.R.G.E. Inspects physical-disk health, per-volume capacity with low-space flags (Warning < 15% free, Critical < 5%), and detects user profiles under `C:\Users` that haven't been modified in N days. Includes progress bars in the HTML.
+
+```powershell
+.\verge.ps1
+.\verge.ps1 -ReportPath "C:\Temp"
+.\verge.ps1 -StaleProfileDays 60
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `-ReportPath` | `string` | `C:\Temp` | Folder where the HTML report is saved |
+| `-StaleProfileDays` | `int` | `90` | Days of profile inactivity that flag a user as stale |
+
+**Output:** `VERGE_<yyyyMMdd_HHmmss>.html`. Read-only — no cleanup is performed.
+
+---
+
+### P.U.R.G.E. — Disk Cleanup
+
+Cleans user/system temp folders, the Windows Update download cache (stops/restarts `wuauserv`), the Recycle Bin, and browser caches (Chrome, Edge, Firefox — all user profiles). Categories are selected by number; `WhatIf` previews without deleting. A CSV of what was reclaimed is written.
+
+```powershell
+.\purge.ps1                               # All categories
+.\purge.ps1 -Categories "1,3,5"           # User temp + WU cache + browser caches
+.\purge.ps1 -WhatIf                       # Preview only
+.\purge.ps1 -LogPath "C:\Temp"
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `-Categories` | `string` | `A` | Categories to clean: comma-separated numbers or `A` for all |
+| `-WhatIf` | `switch` | off | Scan only; do not delete |
+| `-LogPath` | `string` | `C:\Temp` | Folder where the CSV log is saved |
+
+**Categories**
+
+| # | Category |
+|---|----------|
+| 1 | User Temp Folders (`%TEMP%`, `%LOCALAPPDATA%\Temp`) |
+| 2 | System Temp (`C:\Windows\Temp`) |
+| 3 | Windows Update Cache (`C:\Windows\SoftwareDistribution\Download`) |
+| 4 | Recycle Bin |
+| 5 | Browser Caches (Chrome, Edge, Firefox — every user profile) |
+
+**Output:** `PURGE_<yyyyMMdd_HHmmss>.csv`.
+
+---
+
+### S.E.N.T.R.Y. — Service / Task / Event Audit
+
+Reports on 15 critical Windows services, every scheduled task (flags non-Microsoft Failed / Disabled / Stale entries), and System + Application event-log errors from the last N hours. Includes a top-sources summary.
+
+```powershell
+.\sentry.ps1
+.\sentry.ps1 -ReportPath "C:\Temp"
+.\sentry.ps1 -EventHours 48
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `-ReportPath` | `string` | `C:\Temp` | Folder where the HTML report is saved |
+| `-EventHours` | `int` | `24` | Look-back window for System/Application errors (1-168) |
+
+**Output:** `SENTRY_<yyyyMMdd_HHmmss>.html`. Audit-only — does NOT restart services.
+
+---
+
 ## Retrieving Output Files
 
 After a script finishes, the output file path is printed on its own line:
@@ -251,7 +480,10 @@ Use LiveConnect's file transfer or a mapped share to retrieve the file from the 
 | Administrator privileges | All scripts |
 | Internet connectivity | `nexus.ps1`, `renew.ps1` |
 | winget or Chocolatey | `nexus.ps1` (auto-installs Chocolatey if missing) |
-| PSWindowsUpdate module | `renew.ps1` (auto-installed if missing) |
+| PSWindowsUpdate module | `renew.ps1` (auto-installed if missing); `mortar.ps1` only when `-ScanWindowsUpdate` is passed (never auto-installed) |
+| `Get-Tpm` / TrustedPlatformModule module | `seal.ps1` (in-box on Windows 10/11) |
+| Defender PowerShell module | `aegis.ps1` (in-box; collector failures are reported gracefully on Server Core / Defender-removed builds) |
+| Battery hardware | `spark.ps1` (gracefully reports "no battery" on desktops/servers/VMs) |
 
 ---
 
@@ -282,3 +514,12 @@ These scripts are LiveConnect-only counterparts to tools in the main Technician 
 | `audit.ps1` | `ward.ps1` | No banner, no "press Enter" pause — report path passed as parameter |
 | `bastion.ps1` | `sigil.ps1` | No category selection menu, no RDP prompt — categories and RDP passed as parameters |
 | `renew.ps1` | `restoration.ps1` | No countdown timer, no reboot prompt — `-AutoReboot` switch controls reboot behavior |
+| `snare.ps1` | `talon.ps1` | No banner, no "press Enter" pause, no browser auto-open — report path passed as parameter |
+| `seal.ps1` | `totem.ps1` | No banner, no "press Enter" pause, no browser auto-open — report path passed as parameter |
+| `aegis.ps1` | `paladin.ps1` | No banner, no "press Enter" pause, no browser auto-open — event window & signature thresholds passed as parameters |
+| `pulse.ps1` | `augur.ps1` | No banner, no "open report?" prompt — report path passed as parameter |
+| `mortar.ps1` | `anvil.ps1` | No banner, no "press Enter" pause; Windows Update driver scan is opt-in via `-ScanWindowsUpdate` and never auto-installs PSWindowsUpdate |
+| `spark.ps1` | `pyre.ps1` | No banner, no "press Enter" pause, no browser auto-open; powercfg XML+HTML are saved alongside the SPARK report |
+| `verge.ps1` | `threshold.ps1` (audit subset) | No interactive menu, no cleanup actions (use `purge.ps1`); read-only disk + volume + stale-profile audit only |
+| `purge.ps1` | `cleanse.ps1` | No interactive category menu, no Y/N confirmations — categories and `-WhatIf` passed as parameters; CSV log of cleanup written |
+| `sentry.ps1` | `gargoyle.ps1` (audit subset) | No interactive menu, no remote target, no service-restart prompts — read-only audit only |
