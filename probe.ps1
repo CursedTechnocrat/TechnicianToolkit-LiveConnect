@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     P.R.O.B.E. — Performs Rapid Operating-system Baseline Evaluation
     LiveConnect-Compatible System Diagnostic & HTML Report Generator for PowerShell 5.1+

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     A.U.D.I.T. — Automated User Detection, Inspection & Triage
     LiveConnect-Compatible Local Account Audit Tool for PowerShell 5.1+

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     P.U.L.S.E. — Physical-disk Usage, Lifespan & SMART Evaluation
     LiveConnect-Compatible Disk Health & SMART Audit Tool for PowerShell 5.1+

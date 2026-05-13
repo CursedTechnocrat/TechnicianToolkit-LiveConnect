@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     S.N.A.R.E. — Surveys Native Autoruns & Records Entries
     LiveConnect-Compatible Persistence / Autoruns Audit Tool for PowerShell 5.1+

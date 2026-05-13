@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     S.E.A.L. — Secure Element Audit Log
     LiveConnect-Compatible TPM Health Audit Tool for PowerShell 5.1+

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     T.U.N.N.E.L. — Tracks Unattended Network Negotiation Endpoints & Logging
     LiveConnect-Compatible VPN / Always-On VPN Audit Tool for PowerShell 5.1+

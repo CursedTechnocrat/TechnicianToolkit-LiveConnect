@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     T.O.R.C.H. — Test Of Reachable Connected Hosts
     LiveConnect-Compatible Network Discovery & Asset Inventory for PowerShell 5.1+

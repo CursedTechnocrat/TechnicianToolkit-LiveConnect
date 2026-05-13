@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     R.E.N.E.W. — Remotely Enacted Non-interactive Engine for Windows-updates
     LiveConnect-Compatible Windows Update Manager for PowerShell 5.1+

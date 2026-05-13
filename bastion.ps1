@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     B.A.S.T.I.O.N. — Baseline Automation: Secures, Tunes, Isolates & Obliterates Negligence
     LiveConnect-Compatible Security Baseline Enforcement for PowerShell 5.1+

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     V.I.S.I.O.N. — Verifies Inventory, Status & Operational Numbers
     LiveConnect-Compatible Unified 5-Section Diagnostic Report for PowerShell 5.1+
