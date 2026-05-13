@@ -2,6 +2,23 @@
 
 > Standalone, parameter-driven PowerShell scripts built for Kaseya VSA LiveConnect. No menus, no prompts, no interactive input — drop them into a LiveConnect terminal and go.
 
+**21 scripts** across deployment, security, health, network, migration, and cleanup. Each one is a single self-contained `.ps1`, runs from parameters only, and prints its output path at the end. See [Scripts at a glance](#scripts-at-a-glance) or jump straight to [Quick Launch](#quick-launch).
+
+---
+
+## Contents
+
+- [Which Toolkit Should I Use?](#which-toolkit-should-i-use)
+- [Scripts at a glance](#scripts-at-a-glance) — alphabetical one-liner index
+- [Scripts](#scripts) — grouped tables with full descriptions
+- [Quick Launch](#quick-launch) — one-liner `irm` snippets, grouped by tier
+- [Recommended workflows](#recommended-workflows) — common chained scenarios
+- [Usage](#usage) — per-script parameters and outputs
+- [Retrieving output files](#retrieving-output-files)
+- [Requirements](#requirements)
+- [Design rules](#design-rules)
+- [Relationship to the main toolkit](#relationship-to-the-main-toolkit)
+
 ---
 
 ## Which Toolkit Should I Use?
@@ -22,6 +39,36 @@
 The main Technician Toolkit is built around interactive menus, `Read-Host` prompts, `ReadKey` pauses, and `Clear-Host` calls — features that make it guided and approachable when a technician is present. LiveConnect's PowerShell shell cannot handle any of those. The session hangs or errors out immediately when any interactive call is encountered.
 
 Every script in this repo is written from scratch to run entirely from parameters. All output is plain status lines. Report and log file paths are printed clearly at the end of each run so you can retrieve them through LiveConnect's file transfer or a mapped share.
+
+---
+
+## Scripts at a glance
+
+Alphabetical, one line per script. See [Scripts](#scripts) below for full descriptions or [Usage](#usage) for parameters.
+
+| Script | Tier | One-liner |
+|--------|------|-----------|
+| **aegis** | Security | AV / Microsoft Defender posture (signatures, threats, ASR, exclusions, services, events) |
+| **anchor** | Migration | OneDrive Known-Folder-Move pre-migration readiness for the running user |
+| **audit** | Diagnostics | Local user account audit with stale / no-password / disabled flags |
+| **bastion** | Baseline | Security baseline (10 categories: telemetry, UAC, firewall, password policy, ...) |
+| **mortar** | Security | BIOS / UEFI / Secure Boot + vendor firmware-update channel detection |
+| **nexus** | Deployment | Required-software install via winget or Chocolatey (Teams, M365, Chrome, ...) |
+| **probe** | Diagnostics | Hardware / OS / network / uptime / pending updates / events snapshot |
+| **pulse** | Security | Physical disk health + SMART failure prediction |
+| **purge** | Cleanup | Disk cleanup: temp / WU cache / recycle bin / browser caches with `-WhatIf` |
+| **relic** | Network | Local cert stores + optional SSL/TLS remote-host expiry check |
+| **renew** | Deployment | Windows Update install (drivers excluded, `-AutoReboot` controls reboot) |
+| **seal** | Security | TPM presence + BitLocker dependency + Endorsement Key readiness |
+| **sentry** | Cleanup | 15 critical services + scheduled-task health + recent event errors |
+| **signal** | Network | Saved Wi-Fi profile audit (auth, cipher, autoSwitch, MAC random) |
+| **snare** | Security | Persistence / autoruns audit (Run keys, tasks, services, WMI, IFEO, Winlogon) |
+| **spark** | Security | Laptop battery health + powercfg /batteryreport XML & HTML |
+| **torch** | Network | /24 ping sweep + DNS + ARP + TCP port scan with CSV |
+| **tunnel** | Network | Windows VPN + Always-On + NRPT + 17 third-party VPN client services |
+| **vault** | Migration | Outlook PST / OST discovery with profile cross-reference and size flags |
+| **verge** | Cleanup | Disk health + volume space + stale user-profile audit (read-only) |
+| **vision** | Diagnostics | One-shot 5-section unified handoff diagnostic |
 
 ---
 
@@ -53,7 +100,7 @@ Every script in this repo is written from scratch to run entirely from parameter
 | Script | Acronym | Purpose | Counterpart |
 |--------|---------|---------|-------------|
 | **signal.ps1** | **S.I.G.N.A.L.** — Surveys Identified Guard Networks And Logs | Saved Wi-Fi profile audit: authentication, cipher, autoSwitch, hidden SSID, MAC randomization. Flags open / weak / auto-connect entries. Keys masked unless `-IncludeKey`. | B.E.A.C.O.N. |
-| **tunnel.ps1** | **T.U.N.N.E.L.** — Tracks Unattended Network Negotiation Endpoints & Logging | Built-in Windows VPN connections, Always-On triggers, NRPT, tunnel interfaces, third-party VPN-client service detection (12+ vendors) | P.O.R.T.A.L. |
+| **tunnel.ps1** | **T.U.N.N.E.L.** — Tracks Unattended Network Negotiation Endpoints & Logging | Built-in Windows VPN connections, Always-On triggers, NRPT, tunnel interfaces, third-party VPN-client service detection (17 vendors) | P.O.R.T.A.L. |
 | **relic.ps1** | **R.E.L.I.C.** — Reports Expiry of Local Identity Certificates | Local cert store audit (My/CA/Root/TrustedPublisher) + optional SSL/TLS remote-host expiry check | A.R.T.I.F.A.C.T. |
 | **torch.ps1** | **T.O.R.C.H.** — Test Of Reachable Connected Hosts | Parallel /24 ping sweep, DNS reverse lookup, ARP MAC join, TCP port scan (10 common ports), CSV + HTML | L.A.N.T.E.R.N. |
 
@@ -79,22 +126,32 @@ Every script in this repo is written from scratch to run entirely from parameter
 
 Run any script directly from GitHub without cloning — downloads to `%TEMP%` and executes immediately. Append parameters after `& $f` as needed (see [Usage](#usage) for each script's parameters).
 
+Snippets are grouped by tier so you can paste a whole block to run an entire category in sequence. Every line is self-contained, so you can also grab just one.
+
+> All scripts require an Administrator PowerShell session. The `-Scope Process` flag limits the execution policy bypass to the current session only — it does not permanently change system policy.
+
+### Deployment, baseline & diagnostics
+
 ```powershell
-# A.U.D.I.T. — User account audit and HTML report
-Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\audit.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/audit.ps1 -OutFile $f; & $f
-
-# B.A.S.T.I.O.N. — Security baseline enforcement
-Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\bastion.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/bastion.ps1 -OutFile $f; & $f
-
 # N.E.X.U.S. — Software deployment
 Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\nexus.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/nexus.ps1 -OutFile $f; & $f
 
 # P.R.O.B.E. — System diagnostics and HTML report
 Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\probe.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/probe.ps1 -OutFile $f; & $f
 
+# A.U.D.I.T. — User account audit and HTML report
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\audit.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/audit.ps1 -OutFile $f; & $f
+
+# B.A.S.T.I.O.N. — Security baseline enforcement
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\bastion.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/bastion.ps1 -OutFile $f; & $f
+
 # R.E.N.E.W. — Windows Update installation
 Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\renew.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/renew.ps1 -OutFile $f; & $f
+```
 
+### Security & health audits
+
+```powershell
 # S.N.A.R.E. — Persistence / autoruns audit
 Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\snare.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/snare.ps1 -OutFile $f; & $f
 
@@ -112,16 +169,11 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\mortar.ps1"; irm
 
 # S.P.A.R.K. — Battery health (laptops only)
 Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\spark.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/spark.ps1 -OutFile $f; & $f
+```
 
-# V.E.R.G.E. — Disk space + stale profile audit
-Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\verge.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/verge.ps1 -OutFile $f; & $f
+### Network & identity
 
-# P.U.R.G.E. — Disk cleanup
-Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\purge.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/purge.ps1 -OutFile $f; & $f
-
-# S.E.N.T.R.Y. — Service / task / event audit
-Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\sentry.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/sentry.ps1 -OutFile $f; & $f
-
+```powershell
 # S.I.G.N.A.L. — Wi-Fi profile audit
 Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\signal.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/signal.ps1 -OutFile $f; & $f
 
@@ -133,7 +185,11 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\relic.ps1"; irm 
 
 # T.O.R.C.H. — Network discovery & port scan
 Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\torch.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/torch.ps1 -OutFile $f; & $f
+```
 
+### Data & migration prep
+
+```powershell
 # A.N.C.H.O.R. — OneDrive KFM readiness
 Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\anchor.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/anchor.ps1 -OutFile $f; & $f
 
@@ -144,7 +200,131 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\vault.ps1"; irm 
 Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\vision.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/vision.ps1 -OutFile $f; & $f
 ```
 
-> All scripts require an Administrator PowerShell session. The `-Scope Process` flag limits the execution policy bypass to the current session only — it does not permanently change system policy.
+### Cleanup & maintenance
+
+```powershell
+# V.E.R.G.E. — Disk space + stale profile audit
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\verge.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/verge.ps1 -OutFile $f; & $f
+
+# P.U.R.G.E. — Disk cleanup
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\purge.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/purge.ps1 -OutFile $f; & $f
+
+# S.E.N.T.R.Y. — Service / task / event audit
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\sentry.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/sentry.ps1 -OutFile $f; & $f
+```
+
+### Run one script with parameters
+
+The launcher snippet hands the downloaded path to `& $f`. Append parameters after that to pass them through:
+
+```powershell
+# A.E.G.I.S. with a custom report path and a 14-day event window
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\aegis.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/aegis.ps1 -OutFile $f; & $f -ReportPath "\\server\share\Reports" -EventDays 14
+
+# B.A.S.T.I.O.N. applying only categories 1, 3, 5 and enabling RDP
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\bastion.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/bastion.ps1 -OutFile $f; & $f -Categories "1,3,5" -EnableRDP
+
+# P.U.R.G.E. preview only
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\purge.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/purge.ps1 -OutFile $f; & $f -WhatIf
+```
+
+---
+
+## Recommended workflows
+
+Common scenarios with the scripts to run, in order. Drop each block into a LiveConnect terminal — every line is a Quick Launch one-liner, so the whole workflow runs end-to-end without further input.
+
+### New-machine onboarding
+
+Install required software, lock down the baseline, install Windows Updates, capture a starting-state diagnostic for the file.
+
+```powershell
+# 1. Install the standard required software (Teams, M365, Chrome, etc.)
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\nexus.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/nexus.ps1 -OutFile $f; & $f
+
+# 2. Apply the security baseline (all categories, RDP off by default)
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\bastion.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/bastion.ps1 -OutFile $f; & $f
+
+# 3. Install Windows Updates (no auto-reboot)
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\renew.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/renew.ps1 -OutFile $f; & $f
+
+# 4. Capture a unified diagnostic snapshot for the file
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\vision.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/vision.ps1 -OutFile $f; & $f
+```
+
+### Security sweep
+
+When you want a full read-only security posture audit before deciding what to remediate.
+
+```powershell
+# Persistence / autoruns
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\snare.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/snare.ps1 -OutFile $f; & $f
+
+# AV / Defender posture
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\aegis.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/aegis.ps1 -OutFile $f; & $f
+
+# TPM + BitLocker dependency
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\seal.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/seal.ps1 -OutFile $f; & $f
+
+# BIOS / UEFI / Secure Boot
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\mortar.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/mortar.ps1 -OutFile $f; & $f
+
+# Local certificate expiry
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\relic.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/relic.ps1 -OutFile $f; & $f
+
+# Wi-Fi profile audit (keys masked)
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\signal.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/signal.ps1 -OutFile $f; & $f
+
+# VPN / Always-On + third-party VPN clients
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\tunnel.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/tunnel.ps1 -OutFile $f; & $f
+```
+
+### Performance / health triage
+
+User reports the machine is slow. Pulls all health-related data plus a cleanup pass.
+
+```powershell
+# Hardware / OS / network / events snapshot
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\probe.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/probe.ps1 -OutFile $f; & $f
+
+# Physical-disk SMART + volume capacity
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\pulse.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/pulse.ps1 -OutFile $f; & $f
+
+# Battery health (laptops)
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\spark.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/spark.ps1 -OutFile $f; & $f
+
+# Services + scheduled tasks + recent event errors
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\sentry.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/sentry.ps1 -OutFile $f; & $f
+
+# Disk space + stale profile audit
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\verge.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/verge.ps1 -OutFile $f; & $f
+
+# Disk cleanup (all categories)
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\purge.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/purge.ps1 -OutFile $f; & $f
+```
+
+### Pre-migration / re-image readiness
+
+Before swapping a user's laptop or running a wipe-and-reload, confirm the data has actually been pushed to the cloud and identify on-disk mail archives.
+
+```powershell
+# OneDrive client / sign-in / Known Folder Move
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\anchor.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/anchor.ps1 -OutFile $f; & $f
+
+# Outlook PST / OST discovery + size & orphan flags
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\vault.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/vault.ps1 -OutFile $f; & $f
+
+# User-account snapshot for the audit trail
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\audit.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/audit.ps1 -OutFile $f; & $f
+```
+
+### Quick handoff dump
+
+The fastest single-script overview when you need one HTML report that covers system, users, disks, and services in one pass.
+
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\vision.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/vision.ps1 -OutFile $f; & $f
+```
 
 ---
 
