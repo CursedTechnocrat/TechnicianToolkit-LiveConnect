@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     V.E.R.G.E. — Volume Examination & Resource Gauge Evaluator
     LiveConnect-Compatible Disk Space & Stale Profile Audit for PowerShell 5.1+

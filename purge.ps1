@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     P.U.R.G.E. — PowerShell Unified Reclamation & Garbage Elimination
     LiveConnect-Compatible Disk Cleanup Tool for PowerShell 5.1+

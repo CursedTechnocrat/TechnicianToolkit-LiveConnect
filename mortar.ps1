@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     M.O.R.T.A.R. — Motherboard, Onboard ROM & TPM/UEFI Audit Report
     LiveConnect-Compatible BIOS / UEFI / Firmware Audit Tool for PowerShell 5.1+

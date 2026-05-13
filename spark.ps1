@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     S.P.A.R.K. — System Power Audit Reporting Kit
     LiveConnect-Compatible Laptop Battery Health Audit Tool for PowerShell 5.1+

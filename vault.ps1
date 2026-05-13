@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     V.A.U.L.T. — Visits Aged Unindexed Long-forgotten Troves
     LiveConnect-Compatible Outlook PST / OST Discovery Tool for PowerShell 5.1+

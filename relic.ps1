@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     R.E.L.I.C. — Reports Expiry of Local Identity Certificates
     LiveConnect-Compatible Certificate Health & SSL/TLS Expiry Monitor for PowerShell 5.1+

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     S.E.N.T.R.Y. — Services, Events 'N Tasks Reporting Yield
     LiveConnect-Compatible Service / Task / Event Log Monitor for PowerShell 5.1+

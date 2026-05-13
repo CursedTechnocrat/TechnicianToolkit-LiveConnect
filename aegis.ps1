@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     A.E.G.I.S. — Antivirus Endpoint Guard Inspection Snapshot
     LiveConnect-Compatible AV / Microsoft Defender Health Audit for PowerShell 5.1+

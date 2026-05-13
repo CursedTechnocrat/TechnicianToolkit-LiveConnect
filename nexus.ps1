@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     N.E.X.U.S. — Network-Executed Xpress Unattended Setup
     LiveConnect-Compatible Software Deployment for PowerShell 5.1+

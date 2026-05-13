@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     A.N.C.H.O.R. — Audits Native Cloud Hookups & OneDrive Readiness
     LiveConnect-Compatible OneDrive Known-Folder-Move Pre-Migration Validator for PowerShell 5.1+

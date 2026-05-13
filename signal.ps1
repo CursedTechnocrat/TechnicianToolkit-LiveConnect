@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     S.I.G.N.A.L. — Surveys Identified Guard Networks And Logs
     LiveConnect-Compatible Wi-Fi Profile Audit Tool for PowerShell 5.1+
