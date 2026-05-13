@@ -52,10 +52,21 @@
 #>
 
 param(
-    [string]$Categories = "A",
+    [string]$Categories = "",
+    [switch]$Apply,
     [switch]$EnableRDP,
     [string]$LogPath    = "C:\Temp"
 )
+
+# A bare `.\bastion.ps1` invocation used to apply every baseline category by
+# default — fine interactively, but in an unattended RMM run that silently
+# disables RDP, rewrites HKLM, and changes password policy on whoever pushed
+# the script. Require an explicit -Apply switch (and a non-empty -Categories
+# list) before mutating anything; show a preview otherwise.
+$previewOnly = -not $Apply -or [string]::IsNullOrWhiteSpace($Categories)
+if ($previewOnly -and [string]::IsNullOrWhiteSpace($Categories)) {
+    $Categories = "A"
+}
 
 # ===========================
 # ADMIN CHECK
@@ -94,8 +105,14 @@ Write-Host "  Run As     : $env:USERDOMAIN\$env:USERNAME" -ForegroundColor Gray
 Write-Host "  Time       : $ExecutionTime" -ForegroundColor Gray
 Write-Host "  Categories : $Categories" -ForegroundColor Gray
 Write-Host "  Enable RDP : $EnableRDP" -ForegroundColor Gray
+Write-Host "  Apply      : $Apply" -ForegroundColor Gray
 Write-Host "  Log        : $logFullPath" -ForegroundColor Gray
 Write-Host ("  " + ("─" * 62)) -ForegroundColor Cyan
+if ($previewOnly) {
+    Write-Host "  [~] PREVIEW MODE — no changes will be applied." -ForegroundColor Yellow
+    Write-Host "      Re-run with -Apply -Categories <letters> to enforce." -ForegroundColor Yellow
+    Write-Host ""
+}
 Write-Host ""
 Write-Host "  [!!] This script modifies registry keys and local security policy." -ForegroundColor Yellow
 Write-Host "       Domain Group Policy will override local settings where applicable." -ForegroundColor Yellow
@@ -144,6 +161,13 @@ function Set-BaselineReg {
         if ($null -ne $current -and $current -eq $Value) {
             Write-Host "    [OK] $Label -- already set ($Value)." -ForegroundColor Gray
             Add-ActionRecord -Category $Category -Setting $Label -Status "Already Set" -Detail "Value: $Value"
+            return
+        }
+
+        if ($script:previewOnly) {
+            $prev = if ($null -ne $current) { $current } else { "(not set)" }
+            Write-Host "    [~] $Label -- would set. ($prev -> $Value)" -ForegroundColor Yellow
+            Add-ActionRecord -Category $Category -Setting $Label -Status "Preview" -Detail "$prev -> $Value"
             return
         }
 
@@ -301,9 +325,14 @@ function Apply-GuestAccount {
         $guest = Get-LocalUser -Name "Guest" -ErrorAction SilentlyContinue
         if ($guest) {
             if ($guest.Enabled) {
-                Disable-LocalUser -Name "Guest" -ErrorAction Stop
-                Write-Host "    [+] Guest account disabled." -ForegroundColor Green
-                Add-ActionRecord -Category "Accounts" -Setting "Disable Guest account" -Status "Applied"
+                if ($script:previewOnly) {
+                    Write-Host "    [~] Would disable Guest account." -ForegroundColor Yellow
+                    Add-ActionRecord -Category "Accounts" -Setting "Disable Guest account" -Status "Preview"
+                } else {
+                    Disable-LocalUser -Name "Guest" -ErrorAction Stop
+                    Write-Host "    [+] Guest account disabled." -ForegroundColor Green
+                    Add-ActionRecord -Category "Accounts" -Setting "Disable Guest account" -Status "Applied"
+                }
             } else {
                 Write-Host "    [OK] Guest account already disabled." -ForegroundColor Gray
                 Add-ActionRecord -Category "Accounts" -Setting "Disable Guest account" -Status "Already Set"
@@ -325,20 +354,35 @@ function Apply-PasswordPolicy {
     Write-Host "  [*] Applying local password policy..." -ForegroundColor Magenta
     Write-Host "  [!!] These settings apply to local accounts only. Domain policy takes precedence." -ForegroundColor Yellow
 
+    # Each Args entry is a single token, so passing as an array via splat is
+    # equivalent to the old .Split(' ') form but doesn't break if a future
+    # policy line adds a space.
     $policies = @(
-        @{ Args = "/minpwlen:8";         Label = "Minimum password length (8 characters)" },
-        @{ Args = "/maxpwage:90";        Label = "Maximum password age (90 days)" },
-        @{ Args = "/minpwage:1";         Label = "Minimum password age (1 day)" },
-        @{ Args = "/uniquepw:5";         Label = "Password history (remember 5)" },
-        @{ Args = "/lockoutthreshold:5"; Label = "Account lockout threshold (5 attempts)" },
-        @{ Args = "/lockoutduration:30"; Label = "Account lockout duration (30 minutes)" }
+        @{ Args = @('/minpwlen:8');         Label = "Minimum password length (8 characters)" },
+        @{ Args = @('/maxpwage:90');        Label = "Maximum password age (90 days)" },
+        @{ Args = @('/minpwage:1');         Label = "Minimum password age (1 day)" },
+        @{ Args = @('/uniquepw:5');         Label = "Password history (remember 5)" },
+        @{ Args = @('/lockoutthreshold:5'); Label = "Account lockout threshold (5 attempts)" },
+        @{ Args = @('/lockoutduration:30'); Label = "Account lockout duration (30 minutes)" }
     )
 
     foreach ($policy in $policies) {
+        if ($script:previewOnly) {
+            Write-Host "    [~] $($policy.Label) -- would apply (net accounts $($policy.Args -join ' '))." -ForegroundColor Yellow
+            Add-ActionRecord -Category "Password Policy" -Setting $policy.Label -Status "Preview"
+            continue
+        }
         try {
-            & net accounts $policy.Args.Split(' ') 2>&1 | Out-Null
-            Write-Host "    [+] $($policy.Label) -- applied." -ForegroundColor Green
-            Add-ActionRecord -Category "Password Policy" -Setting $policy.Label -Status "Applied"
+            # net.exe doesn't throw on bad input, it just sets a nonzero exit
+            # code; check $LASTEXITCODE so failures don't get logged as Applied.
+            $netOutput = & net accounts @($policy.Args) 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "    [+] $($policy.Label) -- applied." -ForegroundColor Green
+                Add-ActionRecord -Category "Password Policy" -Setting $policy.Label -Status "Applied"
+            } else {
+                Write-Host "    [-] $($policy.Label) -- net accounts exit $LASTEXITCODE`: $netOutput" -ForegroundColor Red
+                Add-ActionRecord -Category "Password Policy" -Setting $policy.Label -Status "Failed" -Detail "exit $LASTEXITCODE`: $netOutput"
+            }
         }
         catch {
             Write-Host "    [-] $($policy.Label) -- failed: $_" -ForegroundColor Red
@@ -369,20 +413,34 @@ function Apply-RemoteDesktop {
             -Name "UserAuthentication" -Value 1 `
             -Category "Remote Desktop" -Label "Require Network Level Authentication (NLA)"
 
-        try {
-            Enable-NetFirewallRule -DisplayGroup "Remote Desktop" -ErrorAction Stop
-            Write-Host "    [+] Remote Desktop firewall rules enabled." -ForegroundColor Green
-            Add-ActionRecord -Category "Remote Desktop" -Setting "Enable RDP firewall rules" -Status "Applied"
-        }
-        catch {
-            Write-Host "    [!!] Could not update RDP firewall rules: $_" -ForegroundColor Yellow
+        if ($script:previewOnly) {
+            Write-Host "    [~] Would enable Remote Desktop firewall rules." -ForegroundColor Yellow
+            Add-ActionRecord -Category "Remote Desktop" -Setting "Enable RDP firewall rules" -Status "Preview"
+        } else {
+            try {
+                Enable-NetFirewallRule -DisplayGroup "Remote Desktop" -ErrorAction Stop
+                Write-Host "    [+] Remote Desktop firewall rules enabled." -ForegroundColor Green
+                Add-ActionRecord -Category "Remote Desktop" -Setting "Enable RDP firewall rules" -Status "Applied"
+            }
+            catch {
+                Write-Host "    [-] Could not update RDP firewall rules: $_" -ForegroundColor Red
+                Add-ActionRecord -Category "Remote Desktop" -Setting "Enable RDP firewall rules" -Status "Failed" -Detail $_
+            }
         }
     } else {
-        try {
-            Disable-NetFirewallRule -DisplayGroup "Remote Desktop" -ErrorAction SilentlyContinue
-            Add-ActionRecord -Category "Remote Desktop" -Setting "Disable RDP firewall rules" -Status "Applied"
+        if ($script:previewOnly) {
+            Write-Host "    [~] Would disable Remote Desktop firewall rules." -ForegroundColor Yellow
+            Add-ActionRecord -Category "Remote Desktop" -Setting "Disable RDP firewall rules" -Status "Preview"
+        } else {
+            try {
+                Disable-NetFirewallRule -DisplayGroup "Remote Desktop" -ErrorAction Stop
+                Add-ActionRecord -Category "Remote Desktop" -Setting "Disable RDP firewall rules" -Status "Applied"
+            }
+            catch {
+                Write-Host "    [-] Could not disable RDP firewall rules: $_" -ForegroundColor Red
+                Add-ActionRecord -Category "Remote Desktop" -Setting "Disable RDP firewall rules" -Status "Failed" -Detail $_
+            }
         }
-        catch { }
     }
 
     Write-Host ""
@@ -391,17 +449,25 @@ function Apply-RemoteDesktop {
 function Apply-AuditPolicy {
     Write-Host "  [*] Applying audit policy..." -ForegroundColor Magenta
 
+    # Args as arrays — splitting the original strings on whitespace would have
+    # broken the quoted multi-word subcategory names ("Account Lockout", etc.)
+    # because PowerShell strips quotes during external-arg passing.
     $auditSettings = @(
-        @{ Args = '/subcategory:"Logon" /success:enable /failure:enable';                         Label = "Logon events" },
-        @{ Args = '/subcategory:"Logoff" /success:enable';                                        Label = "Logoff events" },
-        @{ Args = '/subcategory:"Account Lockout" /failure:enable';                               Label = "Account lockout failures" },
-        @{ Args = '/subcategory:"Audit Policy Change" /success:enable /failure:enable';           Label = "Audit policy changes" },
-        @{ Args = '/subcategory:"User Account Management" /success:enable /failure:enable';       Label = "User account management" }
+        @{ Args = @('/set','/subcategory:Logon','/success:enable','/failure:enable');                       Label = "Logon events" },
+        @{ Args = @('/set','/subcategory:Logoff','/success:enable');                                        Label = "Logoff events" },
+        @{ Args = @('/set','/subcategory:Account Lockout','/failure:enable');                               Label = "Account lockout failures" },
+        @{ Args = @('/set','/subcategory:Audit Policy Change','/success:enable','/failure:enable');         Label = "Audit policy changes" },
+        @{ Args = @('/set','/subcategory:User Account Management','/success:enable','/failure:enable');     Label = "User account management" }
     )
 
     foreach ($audit in $auditSettings) {
+        if ($script:previewOnly) {
+            Write-Host "    [~] $($audit.Label) -- would apply: auditpol $($audit.Args -join ' ')" -ForegroundColor Yellow
+            Add-ActionRecord -Category "Audit Policy" -Setting $audit.Label -Status "Preview"
+            continue
+        }
         try {
-            $result = & auditpol $audit.Args.Split(' ') 2>&1
+            $result = & auditpol @($audit.Args) 2>&1
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "    [+] $($audit.Label) -- enabled." -ForegroundColor Green
                 Add-ActionRecord -Category "Audit Policy" -Setting $audit.Label -Status "Applied"
