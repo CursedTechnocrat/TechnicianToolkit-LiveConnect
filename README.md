@@ -48,6 +48,23 @@ Every script in this repo is written from scratch to run entirely from parameter
 | **mortar.ps1** | **M.O.R.T.A.R.** — Motherboard, Onboard ROM & TPM/UEFI Audit Report | BIOS/UEFI state, Secure Boot, vendor firmware-update channels, optional WU driver/firmware scan | A.N.V.I.L. |
 | **spark.ps1** | **S.P.A.R.K.** — System Power Audit Reporting Kit | Battery health (design vs full charge, cycle count), capacity history, runtime estimates, AC/DC usage — runs powercfg /batteryreport | P.Y.R.E. |
 
+### Network & identity audits
+
+| Script | Acronym | Purpose | Counterpart |
+|--------|---------|---------|-------------|
+| **signal.ps1** | **S.I.G.N.A.L.** — Surveys Identified Guard Networks And Logs | Saved Wi-Fi profile audit: authentication, cipher, autoSwitch, hidden SSID, MAC randomization. Flags open / weak / auto-connect entries. Keys masked unless `-IncludeKey`. | B.E.A.C.O.N. |
+| **tunnel.ps1** | **T.U.N.N.E.L.** — Tracks Unattended Network Negotiation Endpoints & Logging | Built-in Windows VPN connections, Always-On triggers, NRPT, tunnel interfaces, third-party VPN-client service detection (12+ vendors) | P.O.R.T.A.L. |
+| **relic.ps1** | **R.E.L.I.C.** — Reports Expiry of Local Identity Certificates | Local cert store audit (My/CA/Root/TrustedPublisher) + optional SSL/TLS remote-host expiry check | A.R.T.I.F.A.C.T. |
+| **torch.ps1** | **T.O.R.C.H.** — Test Of Reachable Connected Hosts | Parallel /24 ping sweep, DNS reverse lookup, ARP MAC join, TCP port scan (10 common ports), CSV + HTML | L.A.N.T.E.R.N. |
+
+### Data & migration prep
+
+| Script | Acronym | Purpose | Counterpart |
+|--------|---------|---------|-------------|
+| **anchor.ps1** | **A.N.C.H.O.R.** — Audits Native Cloud Hookups & OneDrive Readiness | OneDrive client install + sign-in + Known Folder Move redirection + content volume + sync errors | T.E.T.H.E.R. |
+| **vault.ps1** | **V.A.U.L.T.** — Visits Aged Unindexed Long-forgotten Troves | Outlook PST/OST discovery with profile cross-reference, orphan / oversize (50 GB) / stale flagging | E.X.H.U.M.E. |
+| **vision.ps1** | **V.I.S.I.O.N.** — Verifies Inventory, Status & Operational Numbers | One-shot 5-section unified report: system overview, users, disk space, disk health, services & failed tasks | S.C.R.Y.E.R. |
+
 ### Cleanup & maintenance
 
 | Script | Acronym | Purpose | Counterpart |
@@ -104,6 +121,27 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\purge.ps1"; irm 
 
 # S.E.N.T.R.Y. — Service / task / event audit
 Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\sentry.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/sentry.ps1 -OutFile $f; & $f
+
+# S.I.G.N.A.L. — Wi-Fi profile audit
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\signal.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/signal.ps1 -OutFile $f; & $f
+
+# T.U.N.N.E.L. — VPN / Always-On audit
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\tunnel.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/tunnel.ps1 -OutFile $f; & $f
+
+# R.E.L.I.C. — Certificate / SSL expiry audit
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\relic.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/relic.ps1 -OutFile $f; & $f
+
+# T.O.R.C.H. — Network discovery & port scan
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\torch.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/torch.ps1 -OutFile $f; & $f
+
+# A.N.C.H.O.R. — OneDrive KFM readiness
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\anchor.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/anchor.ps1 -OutFile $f; & $f
+
+# V.A.U.L.T. — Outlook PST / OST discovery
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\vault.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/vault.ps1 -OutFile $f; & $f
+
+# V.I.S.I.O.N. — Unified 5-section diagnostic
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\vision.ps1"; irm https://raw.githubusercontent.com/CursedTechnocrat/TechnicianToolkit-LiveConnect/main/vision.ps1 -OutFile $f; & $f
 ```
 
 > All scripts require an Administrator PowerShell session. The `-Scope Process` flag limits the execution policy bypass to the current session only — it does not permanently change system policy.
@@ -460,6 +498,136 @@ Reports on 15 critical Windows services, every scheduled task (flags non-Microso
 
 ---
 
+### S.I.G.N.A.L. — Wi-Fi Profile Audit
+
+Exports every saved WLAN profile via `netsh wlan export profile ... key=clear`, parses the XML, and reports authentication / cipher tier, connection mode, autoSwitch, hidden-SSID, MAC randomization, and 802.1X for each profile. Filtered tables for open / weak and auto-connecting networks.
+
+```powershell
+.\signal.ps1
+.\signal.ps1 -ReportPath "C:\Temp"
+.\signal.ps1 -IncludeKey        # render cleartext PSKs (technician-managed audits only)
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `-ReportPath` | `string` | `C:\Temp` | Folder where the HTML report is saved |
+| `-IncludeKey` | `switch` | off | Render cleartext pre-shared keys (default: masked) |
+
+**Output:** `SIGNAL_<yyyyMMdd_HHmmss>.html`. Read-only.
+
+---
+
+### T.U.N.N.E.L. — VPN / Always-On VPN Audit
+
+Enumerates built-in Windows VPN connections at User and AllUser scope, surfaces Always-On app/DNS triggers, dumps NRPT, lists active tunnel interfaces, and detects 17+ third-party VPN client services (Cisco, GlobalProtect, Pulse, OpenVPN, WireGuard, Tailscale, ZeroTier, Cloudflare WARP, NordVPN, ProtonVPN, F5, Citrix).
+
+```powershell
+.\tunnel.ps1
+.\tunnel.ps1 -ReportPath "C:\Temp"
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `-ReportPath` | `string` | `C:\Temp` | Folder where the HTML report is saved |
+
+**Output:** `TUNNEL_<yyyyMMdd_HHmmss>.html`. Read-only.
+
+---
+
+### R.E.L.I.C. — Certificate / SSL Expiry Audit
+
+Audits LocalMachine certificate stores (My, CA, Root, TrustedPublisher) for expired and expiring-soon certificates. Optionally connects to remote hosts and checks the presented SSL/TLS certificate's expiry. Thresholds: < 30 days Critical, < 90 days Warning.
+
+```powershell
+.\relic.ps1
+.\relic.ps1 -Targets "mail.contoso.com, gw.contoso.com:8443"
+.\relic.ps1 -Targets "C:\Temp\hosts.txt"   # one host[:port] per line; # comments OK
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `-ReportPath` | `string` | `C:\Temp` | Folder where the HTML report is saved |
+| `-Targets` | `string` | `""` | Comma-separated `hostname[:port]` list, or a path to a text file with one per line. Default port: 443. |
+
+**Output:** `RELIC_<yyyyMMdd_HHmmss>.html`. Read-only.
+
+---
+
+### T.O.R.C.H. — Network Discovery & Port Scan
+
+Parallel ping sweep of the local `/24` subnet (50 concurrent runspaces, 15-second timeout), DNS reverse lookup, ARP MAC join, and TCP port scan of 10 common ports (21, 22, 23, 80, 443, 445, 3389, 5985, 8080, 8443). Saves a CSV alongside the HTML.
+
+```powershell
+.\torch.ps1
+.\torch.ps1 -ReportPath "C:\Temp"
+.\torch.ps1 -SkipPortScan
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `-ReportPath` | `string` | `C:\Temp` | Folder where the HTML and CSV are saved |
+| `-SkipPortScan` | `switch` | off | Skip the TCP port scan stage (sweep only) |
+
+**Output:** `TORCH_<yyyyMMdd_HHmmss>.html` and `TORCH_<yyyyMMdd_HHmmss>.csv`. Read-only.
+
+---
+
+### A.N.C.H.O.R. — OneDrive KFM Pre-Migration Readiness
+
+Audits OneDrive readiness for the **running user's HKCU hive**: client install/running state, signed-in Business and Personal accounts, Known Folder Move redirection (Desktop / Documents / Pictures), per-folder content volume, and OneDrive/User-Profile-Service errors from the last 7 days. Verdict gates a re-image or laptop swap.
+
+```powershell
+.\anchor.ps1
+.\anchor.ps1 -ReportPath "C:\Temp"
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `-ReportPath` | `string` | `C:\Temp` | Folder where the HTML report is saved |
+
+**Output:** `ANCHOR_<yyyyMMdd_HHmmss>.html`. Read-only.
+
+> **Note:** Reads `HKCU:\Software\Microsoft\OneDrive\Accounts` for the running session's user. To audit a different user's OneDrive state, run the script in that user's session.
+
+---
+
+### V.A.U.L.T. — Outlook PST / OST Discovery
+
+Scans the requested drives for `.pst` (and optionally `.ost`) files outside standard system / Program Files directories. Reads HKCU Outlook profiles (16.0 / 15.0 / 14.0 hives) and cross-references discovered files to identify orphans. Flags files ≥ 50 GB (Exchange Online Import hard cap), 10-50 GB (slow lane), and stale > 365 days since last access.
+
+```powershell
+.\vault.ps1                                # All fixed drives, PST only
+.\vault.ps1 -ScanDrives "C:,D:" -IncludeOst
+.\vault.ps1 -ReportPath "C:\Temp"
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `-ReportPath` | `string` | `C:\Temp` | Folder where the HTML report is saved |
+| `-ScanDrives` | `string` | `""` (all fixed) | Comma-separated drive letters, e.g. `"C:,D:"` |
+| `-IncludeOst` | `switch` | off | Also enumerate `.ost` files (default: PST only) |
+
+**Output:** `VAULT_<yyyyMMdd_HHmmss>.html`. Read-only.
+
+---
+
+### V.I.S.I.O.N. — Unified 5-Section Diagnostic
+
+Single HTML report that combines an entire technician handoff in one pass: system overview (OS, hardware, RAM, uptime, PS version), local users with admin / last-logon, per-volume disk-space with progress bars, physical-disk health + SMART (temp & wear via StorageReliabilityCounter), and a services & failed-tasks roll-up.
+
+```powershell
+.\vision.ps1
+.\vision.ps1 -ReportPath "C:\Temp"
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `-ReportPath` | `string` | `C:\Temp` | Folder where the HTML report is saved |
+
+**Output:** `VISION_<yyyyMMdd_HHmmss>.html`. Read-only.
+
+---
+
 ## Retrieving Output Files
 
 After a script finishes, the output file path is printed on its own line:
@@ -523,3 +691,10 @@ These scripts are LiveConnect-only counterparts to tools in the main Technician 
 | `verge.ps1` | `threshold.ps1` (audit subset) | No interactive menu, no cleanup actions (use `purge.ps1`); read-only disk + volume + stale-profile audit only |
 | `purge.ps1` | `cleanse.ps1` | No interactive category menu, no Y/N confirmations — categories and `-WhatIf` passed as parameters; CSV log of cleanup written |
 | `sentry.ps1` | `gargoyle.ps1` (audit subset) | No interactive menu, no remote target, no service-restart prompts — read-only audit only |
+| `signal.ps1` | `beacon.ps1` | No banner, no "press Enter" pause, no browser auto-open — report path passed as parameter |
+| `tunnel.ps1` | `portal.ps1` | No banner, no "press Enter" pause, no browser auto-open — report path passed as parameter |
+| `relic.ps1` | `artifact.ps1` | No interactive menu, no SSL-target prompt — `-Targets` passed as parameter (CSV or file path) |
+| `torch.ps1` | `lantern.ps1` | No interactive menu, port scan is on by default (controlled by `-SkipPortScan`), CSV always written alongside HTML |
+| `anchor.ps1` | `tether.ps1` | No banner, no "press Enter" pause, no browser auto-open — report path passed as parameter |
+| `vault.ps1` | `exhume.ps1` | No banner, no "press Enter" pause — `-ScanDrives` accepts a comma-separated string instead of a string array |
+| `vision.ps1` | `scryer.ps1` | No banner, no "press Enter" pause, no browser auto-open — report path passed as parameter |
