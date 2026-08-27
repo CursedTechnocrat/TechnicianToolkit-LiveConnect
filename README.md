@@ -4,6 +4,10 @@
 
 **21 scripts** across deployment, security, health, network, migration, and cleanup. Each one is a single self-contained `.ps1`, runs from parameters only, and prints its output path at the end. See [Scripts at a glance](#scripts-at-a-glance) or jump straight to [Quick Launch](#quick-launch).
 
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3%20or%20later-blue.svg)](LICENSE)
+
+**Free software for technicians, by technicians.** Use it, change it, share it — see [License](#license) and [Contributing](CONTRIBUTING.md).
+
 ---
 
 ## Contents
@@ -18,6 +22,8 @@
 - [Requirements](#requirements)
 - [Design rules](#design-rules)
 - [Relationship to the main toolkit](#relationship-to-the-main-toolkit)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
@@ -878,3 +884,45 @@ These scripts are LiveConnect-only counterparts to tools in the main Technician 
 | `anchor.ps1` | `tether.ps1` | No banner, no "press Enter" pause, no browser auto-open — report path passed as parameter |
 | `vault.ps1` | `exhume.ps1` | No banner, no "press Enter" pause — `-ScanDrives` accepts a comma-separated string instead of a string array |
 | `vision.ps1` | `scryer.ps1` | No banner, no "press Enter" pause, no browser auto-open — report path passed as parameter |
+
+---
+
+## Contributing
+
+These scripts get written against real LiveConnect sessions on real client machines, and that
+is exactly where their bugs show up. If you hit one, push the fix back — see
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
+The hard rule for this repo: **no interactive calls, ever.** No `Read-Host`, no `ReadKey`, no
+`Clear-Host`, no menus. Every input is a parameter. A single interactive call anywhere in a
+script will hang a LiveConnect terminal, so anything that cannot be driven by parameters
+belongs in the [main toolkit](https://github.com/CursedTechnocrat/TechnicianToolkit) instead.
+
+Contributions are accepted under the project's license, **GPL-3.0-or-later**. You keep the
+copyright in what you write.
+
+---
+
+## License
+
+**GNU General Public License v3.0 or later (GPL-3.0-or-later)** — see [LICENSE](LICENSE) for the full text.
+
+These scripts are free software. You may use them, study them, change them, and pass them on.
+The one condition is that they stay free: if you distribute a modified version, your recipients
+get the same source and the same rights you had.
+
+What that means day to day:
+
+| You want to… | GPL says |
+|---|---|
+| Run these scripts on client endpoints through your RMM, commercially, at any scale | **Go ahead.** Running the software is unrestricted — the GPL only attaches obligations when you *distribute* it. |
+| Edit a script for your own shop's workflow and keep it in-house | **Go ahead.** Internal use is not distribution. Nothing to publish. |
+| Paste a modified script into a procedure another MSP will use | Fine — pass on the source and license it GPL-3.0-or-later too. |
+| Fold these scripts into a closed-source commercial RMM product | Not permitted. That is what the copyleft is here to prevent. |
+
+Because these scripts are designed to be pasted one at a time into a remote shell, every
+script carries its own copyright and license notice in its header — a copy that travels alone
+still tells the next technician what it is and where it came from.
+
+The companion [main toolkit](https://github.com/CursedTechnocrat/TechnicianToolkit) is licensed
+the same way.
